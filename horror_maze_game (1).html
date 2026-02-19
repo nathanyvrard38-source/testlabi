@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Labyrinthe d'Horreur</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Courier New', monospace;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #ff0000;
+            font-size: 18px;
+            text-shadow: 0 0 10px #ff0000;
+            z-index: 100;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border: 2px solid #ff0000;
+        }
+        #instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff0000;
+            font-size: 24px;
+            text-align: center;
+            text-shadow: 0 0 20px #ff0000;
+            background: rgba(0,0,0,0.9);
+            padding: 30px;
+            border: 3px solid #ff0000;
+            display: none;
+        }
+        #victory {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00ff00;
+            font-size: 32px;
+            text-align: center;
+            text-shadow: 0 0 20px #00ff00;
+            background: rgba(0,0,0,0.9);
+            padding: 40px;
+            border: 3px solid #00ff00;
+            display: none;
+        }
+        #jumpscare {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: shake 0.5s infinite;
+        }
+        #jumpscare img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            10% { transform: translate(-10px, -10px) rotate(-2deg); }
+            20% { transform: translate(10px, 10px) rotate(2deg); }
+            30% { transform: translate(-10px, 10px) rotate(-2deg); }
+            40% { transform: translate(10px, -10px) rotate(2deg); }
+            50% { transform: translate(-10px, -10px) rotate(-2deg); }
+            60% { transform: translate(10px, 10px) rotate(2deg); }
+            70% { transform: translate(-10px, 10px) rotate(-2deg); }
+            80% { transform: translate(10px, -10px) rotate(2deg); }
+            90% { transform: translate(-10px, -10px) rotate(-2deg); }
+        }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <div>🔦 Trouvez le bouton rouge</div>
+        <div>🚪 Ouvrez la porte</div>
+        <div id="status">Bouton: NON TROUVÉ</div>
+        <div style="margin-top: 10px; font-size: 14px;">ZQSD: Déplacer | Souris: Regarder</div>
+    </div>
+    <div id="instructions">
+        <h2>BIENVENUE DANS LE LABYRINTHE</h2>
+        <p>Trouvez le bouton rouge caché dans le labyrinthe...</p>
+        <p>Une fois trouvé, cherchez la porte pour vous échapper...</p>
+        <p style="margin-top: 20px; font-size: 18px;">Cliquez pour commencer</p>
+    </div>
+    <div id="victory">
+        <h2>VOUS AVEZ SURVÉCU !</h2>
+        <p>Vous avez trouvé le bouton et ouvert la porte...</p>
+    </div>
+    <div id="jumpscare">
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='bg'%3E%3Cstop offset='0%25' style='stop-color:%23ff0000'/%3E%3Cstop offset='100%25' style='stop-color:%23000000'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='400' height='400' fill='url(%23bg)'/%3E%3Cellipse cx='200' cy='180' rx='120' ry='140' fill='%23ffffff' stroke='%23000' stroke-width='3'/%3E%3Ccircle cx='170' cy='160' r='25' fill='%23000000'/%3E%3Ccircle cx='230' cy='160' r='25' fill='%23000000'/%3E%3Ccircle cx='175' cy='155' r='8' fill='%23ff0000'/%3E%3Ccircle cx='235' cy='155' r='8' fill='%23ff0000'/%3E%3Cellipse cx='200' cy='200' rx='15' ry='25' fill='%23ff0000'/%3E%3Cpath d='M 140 240 Q 200 280 260 240' stroke='%23ff0000' stroke-width='8' fill='none' stroke-linecap='round'/%3E%3Cpath d='M 140 240 L 145 250 M 155 245 L 160 255 M 170 248 L 175 258 M 185 250 L 190 260 M 200 250 L 205 260 M 215 250 L 220 258 M 230 248 L 235 255 M 245 245 L 250 250 M 255 242 L 260 240' stroke='%23ffffff' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M 120 80 Q 100 100 90 130 Q 80 160 85 190' stroke='%23ff6600' stroke-width='12' fill='none' stroke-linecap='round'/%3E%3Cpath d='M 150 60 Q 140 80 135 110 Q 132 140 138 170' stroke='%23ff3300' stroke-width='10' fill='none' stroke-linecap='round'/%3E%3Cpath d='M 180 50 Q 175 70 173 100 Q 172 130 178 160' stroke='%23ffff00' stroke-width='10' fill='none' stroke-linecap='round'/%3E%3Cpath d='M 210 50 Q 215 70 217 100 Q 218 130 212 160' stroke='%2300ff00' stroke-width='10' fill='none' stroke-linecap='round'/%3E%3Cpath d='M 240 60 Q 250 80 255 110 Q 258 140 252 170' stroke='%230099ff' stroke-width='10' fill='none' stroke-linecap='round'/%3E%3Cpath d='M 270 80 Q 290 100 300 130 Q 310 160 305 190' stroke='%23ff00ff' stroke-width='12' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='180' cy='90' r='8' fill='%23ff0000'/%3E%3Ccircle cx='220' cy='90' r='8' fill='%23ff0000'/%3E%3C/svg%3E" alt="Clown">
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let scene, camera, renderer, clock;
+        let walls = [];
+        let button, door, doorFrame, teleportDoor, teleportDoorFrame;
+        let buttonFound = false;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
+        const moveSpeed = 15;
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let gameStarted = false;
+        let jumpscareTimer;
+
+        // Son de cri (synthétisé)
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playScream() {
+            // Cri humain terrifiant avec plusieurs couches
+            const now = audioContext.currentTime;
+            
+            // Couche 1: Voix grave et gutturale
+            const osc1 = audioContext.createOscillator();
+            const gain1 = audioContext.createGain();
+            osc1.connect(gain1);
+            gain1.connect(audioContext.destination);
+            osc1.type = 'sawtooth';
+            osc1.frequency.setValueAtTime(180, now);
+            osc1.frequency.exponentialRampToValueAtTime(120, now + 0.3);
+            osc1.frequency.exponentialRampToValueAtTime(300, now + 0.6);
+            osc1.frequency.exponentialRampToValueAtTime(80, now + 1.2);
+            gain1.gain.setValueAtTime(1.0, now);
+            gain1.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+            osc1.start(now);
+            osc1.stop(now + 1.2);
+            
+            // Couche 2: Voix aiguë stridente
+            const osc2 = audioContext.createOscillator();
+            const gain2 = audioContext.createGain();
+            osc2.connect(gain2);
+            gain2.connect(audioContext.destination);
+            osc2.type = 'square';
+            osc2.frequency.setValueAtTime(900, now);
+            osc2.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
+            osc2.frequency.exponentialRampToValueAtTime(600, now + 0.5);
+            osc2.frequency.exponentialRampToValueAtTime(1500, now + 0.8);
+            osc2.frequency.exponentialRampToValueAtTime(200, now + 1.2);
+            gain2.gain.setValueAtTime(1.0, now);
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+            osc2.start(now);
+            osc2.stop(now + 1.2);
+            
+            // Couche 3: Texture bruitée pour le souffle
+            const osc3 = audioContext.createOscillator();
+            const gain3 = audioContext.createGain();
+            osc3.connect(gain3);
+            gain3.connect(audioContext.destination);
+            osc3.type = 'sawtooth';
+            osc3.frequency.setValueAtTime(450, now);
+            osc3.frequency.exponentialRampToValueAtTime(800, now + 0.4);
+            osc3.frequency.exponentialRampToValueAtTime(250, now + 1.2);
+            gain3.gain.setValueAtTime(0.8, now);
+            gain3.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+            osc3.start(now);
+            osc3.stop(now + 1.2);
+            
+            // Couche 4: Harmoniques aigües pour l'horreur
+            const osc4 = audioContext.createOscillator();
+            const gain4 = audioContext.createGain();
+            osc4.connect(gain4);
+            gain4.connect(audioContext.destination);
+            osc4.type = 'triangle';
+            osc4.frequency.setValueAtTime(2000, now);
+            osc4.frequency.exponentialRampToValueAtTime(3500, now + 0.3);
+            osc4.frequency.exponentialRampToValueAtTime(1000, now + 1.2);
+            gain4.gain.setValueAtTime(0.7, now);
+            gain4.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+            osc4.start(now);
+            osc4.stop(now + 1.2);
+        }
+
+        function showJumpscare() {
+            if (!gameStarted) return;
+            
+            const jumpscareDiv = document.getElementById('jumpscare');
+            jumpscareDiv.style.display = 'flex';
+            playScream();
+            
+            setTimeout(() => {
+                jumpscareDiv.style.display = 'none';
+            }, 1000);
+        }
+
+        function startJumpscareTimer() {
+            jumpscareTimer = setInterval(showJumpscare, 20000);
+        }
+
+        // Initialisation
+        function init() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x000000, 1, 50);
+            clock = new THREE.Clock();
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(2, 1.6, 2);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            // Lumières
+            const ambientLight = new THREE.AmbientLight(0x330000, 0.3);
+            scene.add(ambientLight);
+
+            const playerLight = new THREE.PointLight(0xff6666, 1, 10);
+            camera.add(playerLight);
+            scene.add(camera);
+
+            // Sol
+            const floorGeometry = new THREE.PlaneGeometry(100, 100);
+            const floorMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x2a0505,
+                roughness: 0.8
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = 0;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Plafond
+            const ceiling = new THREE.Mesh(floorGeometry, floorMaterial);
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.position.y = 4;
+            scene.add(ceiling);
+
+            createMaze();
+            createLights();
+            createButton();
+            createDoor();
+
+            // Événements
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+            document.addEventListener('click', onClick);
+            window.addEventListener('resize', onWindowResize);
+
+            document.getElementById('instructions').style.display = 'block';
+            
+            // Activer le pointer lock automatiquement
+            renderer.domElement.requestPointerLock = renderer.domElement.requestPointerLock ||
+                                                     renderer.domElement.mozRequestPointerLock ||
+                                                     renderer.domElement.webkitRequestPointerLock;
+            
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+        }
+
+        function createMaze() {
+            const wallMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x330000,
+                roughness: 0.7
+            });
+
+            // Structure du labyrinthe
+            const mazeLayout = [
+                // Murs extérieurs
+                { x: 0, z: -10, w: 40, h: 1 },
+                { x: 0, z: 10, w: 40, h: 1 },
+                { x: -20, z: 0, w: 1, h: 20 },
+                { x: 20, z: 0, w: 1, h: 20 },
+                
+                // Murs intérieurs
+                { x: -10, z: -5, w: 1, h: 8 },
+                { x: -5, z: 2, w: 10, h: 1 },
+                { x: 5, z: -3, w: 1, h: 10 },
+                { x: 10, z: 5, w: 8, h: 1 },
+                { x: -2, z: -8, w: 8, h: 1 },
+                { x: 12, z: -7, w: 1, h: 6 },
+                { x: -12, z: 3, w: 1, h: 8 },
+                { x: 3, z: 8, w: 6, h: 1 },
+            ];
+
+            mazeLayout.forEach(wall => {
+                const geometry = new THREE.BoxGeometry(wall.w, 4, wall.h);
+                const mesh = new THREE.Mesh(geometry, wallMaterial);
+                mesh.position.set(wall.x, 2, wall.z);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                scene.add(mesh);
+                walls.push(mesh);
+            });
+        }
+
+        function createLights() {
+            // Guirlandes lumineuses suspendues
+            const stringLights = [
+                { start: [-18, 3.5, -8], end: [-10, 3.5, -8], color: 0xff3300 },
+                { start: [-10, 3.5, -8], end: [-2, 3.5, -8], color: 0xffaa00 },
+                { start: [2, 3.5, 5], end: [10, 3.5, 5], color: 0xff00ff },
+                { start: [-15, 3.5, 7], end: [-8, 3.5, 7], color: 0x00ffff },
+                { start: [5, 3.5, -7], end: [5, 3.5, 2], color: 0xff0000 },
+                { start: [15, 3.5, -5], end: [15, 3.5, 3], color: 0xffff00 },
+                { start: [-5, 3.5, -3], end: [3, 3.5, -3], color: 0x00ff00 },
+            ];
+
+            stringLights.forEach(string => {
+                const startPos = new THREE.Vector3(...string.start);
+                const endPos = new THREE.Vector3(...string.end);
+                const distance = startPos.distanceTo(endPos);
+                const numBulbs = Math.floor(distance / 1.5);
+
+                // Créer le câble
+                const cableGeometry = new THREE.CylinderGeometry(0.02, 0.02, distance, 8);
+                const cableMaterial = new THREE.MeshBasicMaterial({ color: 0x222222 });
+                const cable = new THREE.Mesh(cableGeometry, cableMaterial);
+                
+                const midPoint = startPos.clone().add(endPos).multiplyScalar(0.5);
+                cable.position.copy(midPoint);
+                
+                const direction = endPos.clone().sub(startPos);
+                const axis = new THREE.Vector3(0, 1, 0);
+                cable.quaternion.setFromUnitVectors(axis, direction.normalize());
+                
+                scene.add(cable);
+
+                // Créer les ampoules le long du câble
+                for (let i = 0; i <= numBulbs; i++) {
+                    const t = i / numBulbs;
+                    const pos = startPos.clone().lerp(endPos, t);
+                    
+                    // Ampoule
+                    const bulbGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+                    const bulbMaterial = new THREE.MeshStandardMaterial({
+                        color: string.color,
+                        emissive: string.color,
+                        emissiveIntensity: 0.8
+                    });
+                    const bulb = new THREE.Mesh(bulbGeometry, bulbMaterial);
+                    bulb.position.copy(pos);
+                    scene.add(bulb);
+
+                    // Lumière ponctuelle
+                    const light = new THREE.PointLight(string.color, 0.8, 8);
+                    light.position.copy(pos);
+                    scene.add(light);
+                }
+            });
+        }
+
+        function createButton() {
+            const buttonGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16);
+            const buttonMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xff0000,
+                emissive: 0xff0000,
+                emissiveIntensity: 0.5
+            });
+            button = new THREE.Mesh(buttonGeometry, buttonMaterial);
+            button.position.set(-15, 1.5, -7);
+            button.rotation.z = Math.PI / 2;
+            button.userData.clickable = true;
+            scene.add(button);
+
+            // Lumière du bouton
+            const buttonLight = new THREE.PointLight(0xff0000, 2, 5);
+            buttonLight.position.copy(button.position);
+            scene.add(buttonLight);
+        }
+
+        function createDoor() {
+            // Cadre de porte de sortie
+            const frameMaterial = new THREE.MeshStandardMaterial({ color: 0x4a4a4a });
+            const frameGeometry = new THREE.BoxGeometry(0.3, 4, 3);
+            doorFrame = new THREE.Mesh(frameGeometry, frameMaterial);
+            doorFrame.position.set(20, 2, 5);
+            scene.add(doorFrame);
+
+            // Porte de sortie
+            const doorMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x2a2a2a,
+                metalness: 0.3
+            });
+            const doorGeometry = new THREE.BoxGeometry(0.2, 3.5, 2.5);
+            door = new THREE.Mesh(doorGeometry, doorMaterial);
+            door.position.set(19.9, 2, 5);
+            scene.add(door);
+
+            // Cadre de porte de téléportation (invisible au début)
+            const teleportFrameMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x1a1a2e,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+            
+            // Montants gauche et droit
+            const postGeometry = new THREE.BoxGeometry(0.3, 4, 0.3);
+            const leftPost = new THREE.Mesh(postGeometry, teleportFrameMaterial);
+            leftPost.position.set(-15.3, 2, -8.2);
+            leftPost.visible = false;
+            scene.add(leftPost);
+            
+            const rightPost = new THREE.Mesh(postGeometry, teleportFrameMaterial);
+            rightPost.position.set(-15.3, 2, -5.8);
+            rightPost.visible = false;
+            scene.add(rightPost);
+            
+            // Linteau du haut
+            const lintelGeometry = new THREE.BoxGeometry(0.3, 0.3, 2.8);
+            const lintel = new THREE.Mesh(lintelGeometry, teleportFrameMaterial);
+            lintel.position.set(-15.3, 4, -7);
+            lintel.visible = false;
+            scene.add(lintel);
+            
+            // Regrouper les éléments du cadre
+            teleportDoorFrame = new THREE.Group();
+            teleportDoorFrame.add(leftPost, rightPost, lintel);
+            teleportDoorFrame.visible = false;
+            scene.add(teleportDoorFrame);
+
+            // Porte de téléportation avec effet de portail
+            const teleportDoorMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x0055ff,
+                transparent: true,
+                opacity: 0.6,
+                emissive: 0x0088ff,
+                emissiveIntensity: 0.5,
+                side: THREE.DoubleSide
+            });
+            const teleportDoorGeometry = new THREE.BoxGeometry(0.15, 3.5, 2.3);
+            teleportDoor = new THREE.Mesh(teleportDoorGeometry, teleportDoorMaterial);
+            teleportDoor.position.set(-15.2, 2, -7);
+            teleportDoor.visible = false;
+            scene.add(teleportDoor);
+
+            // Poignée de porte
+            const handleGeometry = new THREE.BoxGeometry(0.2, 0.1, 0.3);
+            const handleMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x00aaff,
+                emissive: 0x00aaff,
+                emissiveIntensity: 0.7
+            });
+            const handle = new THREE.Mesh(handleGeometry, handleMaterial);
+            handle.position.set(-15.1, 2, -6.2);
+            handle.visible = false;
+            teleportDoor.userData.handle = handle;
+            scene.add(handle);
+
+            // Particules autour de la porte
+            const particleGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+            const particleMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x00ffff,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const particles = [];
+            for (let i = 0; i < 20; i++) {
+                const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+                particle.visible = false;
+                particles.push(particle);
+                scene.add(particle);
+            }
+            teleportDoor.userData.particles = particles;
+
+            // Lumières pour la porte de téléportation
+            const teleportLight1 = new THREE.PointLight(0x0066ff, 2, 8);
+            teleportLight1.position.set(-15, 2, -7);
+            scene.add(teleportLight1);
+            teleportLight1.visible = false;
+            
+            const teleportLight2 = new THREE.PointLight(0x00ffff, 1, 5);
+            teleportLight2.position.set(-14.5, 2, -7);
+            scene.add(teleportLight2);
+            teleportLight2.visible = false;
+            
+            teleportDoor.userData.lights = [teleportLight1, teleportLight2];
+        }
+
+        function onKeyDown(event) {
+            switch(event.code) {
+                case 'KeyW': case 'KeyZ': moveForward = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyA': case 'KeyD': moveLeft = true; break;
+                case 'KeyQ': moveRight = true; break;
+            }
+        }
+
+        function onKeyUp(event) {
+            switch(event.code) {
+                case 'KeyW': case 'KeyZ': moveForward = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyA': case 'KeyD': moveLeft = false; break;
+                case 'KeyQ': moveRight = false; break;
+            }
+        }
+
+        let yaw = 0, pitch = 0;
+        function onMouseMove(event) {
+            if (document.pointerLockElement === renderer.domElement) {
+                const sensitivity = 0.002;
+                yaw -= event.movementX * sensitivity;
+                pitch -= event.movementY * sensitivity;
+                pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+                
+                camera.rotation.order = 'YXZ';
+                camera.rotation.y = yaw;
+                camera.rotation.x = pitch;
+            }
+        }
+
+        function onClick(event) {
+            if (document.getElementById('instructions').style.display === 'block') {
+                document.getElementById('instructions').style.display = 'none';
+                // Verrouiller le pointeur pour une rotation infinie
+                renderer.domElement.requestPointerLock();
+                gameStarted = true;
+                startJumpscareTimer();
+                return;
+            }
+
+            // Si le pointeur n'est pas verrouillé, le verrouiller
+            if (!document.pointerLockElement) {
+                renderer.domElement.requestPointerLock();
+                return;
+            }
+
+            // Vérifier les interactions avec les objets
+            mouse.x = 0;
+            mouse.y = 0;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects([button, door, teleportDoor]);
+
+            if (intersects.length > 0) {
+                const obj = intersects[0].object;
+                
+                if (obj === button && !buttonFound) {
+                    buttonFound = true;
+                    button.material.emissive.setHex(0x00ff00);
+                    document.getElementById('status').textContent = 'Bouton: TROUVÉ! Porte de téléportation ouverte!';
+                    button.material.color.setHex(0x00ff00);
+                    
+                    // Faire apparaître la porte de téléportation et tous ses éléments
+                    teleportDoor.visible = true;
+                    teleportDoorFrame.visible = true;
+                    teleportDoorFrame.children.forEach(child => child.visible = true);
+                    teleportDoor.userData.handle.visible = true;
+                    teleportDoor.userData.particles.forEach(p => p.visible = true);
+                    teleportDoor.userData.lights.forEach(l => l.visible = true);
+                }
+                
+                if (obj === teleportDoor && buttonFound) {
+                    // Téléporter le joueur près de la porte de sortie
+                    camera.position.set(17, 1.6, 5);
+                    yaw = -Math.PI / 2;
+                    pitch = 0;
+                    document.getElementById('status').textContent = 'Téléporté! Trouvez la porte de sortie!';
+                }
+                
+                if (obj === door && buttonFound) {
+                    document.getElementById('victory').style.display = 'block';
+                    setTimeout(() => location.reload(), 3000);
+                }
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function checkCollision(newPos) {
+            const playerBox = new THREE.Box3().setFromCenterAndSize(
+                newPos,
+                new THREE.Vector3(0.5, 2, 0.5)
+            );
+
+            for (let wall of walls) {
+                const wallBox = new THREE.Box3().setFromObject(wall);
+                if (playerBox.intersectsBox(wallBox)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            velocity.x -= velocity.x * 10.0 * delta;
+            velocity.z -= velocity.z * 10.0 * delta;
+
+            direction.z = Number(moveForward) - Number(moveBackward);
+            direction.x = Number(moveRight) - Number(moveLeft);
+            direction.normalize();
+
+            if (moveForward || moveBackward) velocity.z -= direction.z * moveSpeed * delta;
+            if (moveLeft || moveRight) velocity.x -= direction.x * moveSpeed * delta;
+
+            const oldPos = camera.position.clone();
+            camera.translateX(velocity.x * delta);
+            camera.translateZ(velocity.z * delta);
+
+            // Fixer la hauteur de la caméra (empêcher de passer sous le sol)
+            camera.position.y = 1.6;
+
+            if (checkCollision(camera.position)) {
+                camera.position.copy(oldPos);
+                camera.position.y = 1.6; // S'assurer que Y reste fixe même après collision
+            }
+
+            // Animation du bouton
+            if (button && !buttonFound) {
+                button.rotation.x += delta;
+            }
+
+            // Animation de la porte de téléportation
+            if (teleportDoor && teleportDoor.visible) {
+                const time = Date.now() * 0.001;
+                teleportDoor.material.opacity = 0.5 + Math.sin(time * 3) * 0.15;
+                teleportDoor.material.emissiveIntensity = 0.4 + Math.sin(time * 2) * 0.2;
+                
+                // Animation des particules autour de la porte
+                const particles = teleportDoor.userData.particles;
+                particles.forEach((particle, i) => {
+                    const angle = (i / particles.length) * Math.PI * 2 + time;
+                    const radius = 1.5 + Math.sin(time * 2 + i) * 0.3;
+                    particle.position.set(
+                        -15 + Math.cos(angle) * 0.3,
+                        2 + Math.sin(angle * 2) * 1.5,
+                        -7 + Math.sin(angle) * radius
+                    );
+                    particle.material.opacity = 0.5 + Math.sin(time * 3 + i) * 0.3;
+                });
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        init();
+        animate();
+    </script>
+</body>
+</html>
